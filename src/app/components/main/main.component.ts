@@ -19,6 +19,7 @@ import { SettingsComponent } from '../settings/settings.component';
       <!-- Header -->
       <header class="header">
         <div class="header-left">
+          <img src="bloggerator.png" alt="Bloggerator" class="logo-icon" />
           <h1 class="logo-text">{{ t().app.title }}</h1>
         </div>
         <div class="header-right">
@@ -221,6 +222,18 @@ import { SettingsComponent } from '../settings/settings.component';
       position: sticky;
       top: 0;
       z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
     }
 
     .logo-text {

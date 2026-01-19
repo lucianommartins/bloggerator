@@ -13,10 +13,7 @@ import { ThemeService } from '../../services/theme.service';
         <!-- Header -->
         <div class="login-header">
           <div class="logo">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="22" stroke="var(--accent-primary)" stroke-width="3"/>
-              <path d="M16 24l6 6 10-12" stroke="var(--accent-secondary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img src="bloggerator.png" alt="Bloggerator" class="logo-img" />
           </div>
           <h1>{{ t().app.title }}</h1>
           <p class="tagline">{{ t().login.tagline }}</p>
@@ -78,7 +75,13 @@ import { ThemeService } from '../../services/theme.service';
     }
 
     .logo {
-      margin-bottom: var(--spacing-md);
+      margin-bottom: 0;
+    }
+
+    .logo-img {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
     }
 
     h1 {

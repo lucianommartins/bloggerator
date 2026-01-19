@@ -28,6 +28,13 @@ export class GeminiService {
 
     const prompt = this.buildPrompt(request, languagesText);
 
+    // Build tools array: always include googleSearch for updated info
+    // Include urlContext if URLs are provided
+    const tools: any[] = [{ googleSearch: {} }];
+    if (allUrls.length > 0) {
+      tools.push({ urlContext: {} });
+    }
+
     const response = await client.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
@@ -35,7 +42,7 @@ export class GeminiService {
         temperature: 0.8,
         topP: 0.95,
         maxOutputTokens: 8192,
-        tools: allUrls.length > 0 ? [{ urlContext: {} }] : undefined,
+        tools,
       },
     });
 
@@ -46,28 +53,36 @@ export class GeminiService {
   private buildPrompt(request: BlogGenerationRequest, languagesText: string): string {
     const referenceBlogsSection = request.referenceBlogs.length > 0
       ? `
-## BLOGS DE REFERÊNCIA (para extrair estilo de escrita)
+## BLOGS DE REFERÊNCIA (MANDATÓRIO)
+ACESSE E LEIA O CONTEÚDO COMPLETO de cada URL abaixo:
 ${request.referenceBlogs.map((url, i) => `${i + 1}. ${url}`).join('\n')}
 
-Analise esses blogs para entender:
-- Tom de voz (formal, informal, técnico, humorístico)
-- Estrutura típica dos posts
-- Como código é formatado e explicado
-- Como imagens são usadas e referenciadas
-- Padrões de títulos e subtítulos
+⚠️ É OBRIGATÓRIO:
+- Replicar fielmente o estilo de escrita desses blogs
+- Seguir a mesma estrutura e formatação
+- Usar o mesmo tom de voz (formal, informal, técnico)
+- Copiar o padrão de títulos e subtítulos
+- Manter a mesma abordagem ao explicar código
 `
       : '';
 
     const contextSection = request.contextUrls.length > 0
       ? `
-## CONTEXTO DO TEMA
+## FONTE DE CONTEÚDO (MANDATÓRIO)
+ACESSE E LEIA O CONTEÚDO COMPLETO de cada URL abaixo:
 ${request.contextUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}
 
-Use essas URLs para extrair informações técnicas sobre o tema do post.
+⚠️ É OBRIGATÓRIO:
+- Usar APENAS informações factualmente corretas dessas URLs
+- Copiar conceitos, definições e terminologia das fontes
+- Basear-se nos code samples das fontes, adaptando ao contexto do blog
+- Seguir as recomendações e boas práticas mencionadas nas fontes
+- NÃO inventar informações que não estejam nessas URLs
+- Citar as fontes no texto usando links markdown [texto](url)
 `
       : '';
 
-    return `Você é um ghostwriter especializado em criar posts de blog técnicos.
+    return `Você é um ghostwriter especializado em criar posts de blog técnicos de alta qualidade, otimizados para SEO.
 
 ${referenceBlogsSection}
 ${contextSection}
@@ -75,34 +90,67 @@ ${contextSection}
 ## DIRECIONAMENTO DO USUÁRIO
 ${request.direction}
 
-## INSTRUÇÕES
+## BOAS PRÁTICAS DE BLOG (SEO 2025)
+Siga estas diretrizes baseadas em pesquisas de SEO:
+
+### Tamanho e Estrutura
+- **Tamanho ideal**: 1500-2500 palavras (ajuste conforme a complexidade do tema)
+- **Parágrafos curtos**: 2-4 linhas máximo para melhor legibilidade
+- **Hierarquia clara**: Use H1 (título), H2 (seções principais), H3 (subseções)
+- **Escaneabilidade**: Use listas, bullets e tabelas para quebrar texto denso
+
+### Estrutura do Post
+1. **Título (H1)**: Compelling, ~60 caracteres, com keyword principal
+2. **Introdução**: Hook + contexto + o que o leitor vai aprender
+3. **Corpo**: Seções lógicas com H2/H3, cada uma respondendo uma pergunta
+4. **Key Takeaways**: Resumo em bullets dos pontos principais
+5. **Conclusão**: Recapitulação + próximos passos
+6. **Call-to-Action**: Convite para comentar, compartilhar ou ler posts relacionados
+
+### Formatação
+- Negrito para termos importantes
+- Blocos de código com syntax highlighting
+- Links internos e externos relevantes
+- Imagens/vídeos em pontos estratégicos
+
+## INSTRUÇÕES DE CONTEÚDO
 1. Gere um post de blog completo para cada idioma: ${languagesText}
 2. Mantenha o estilo de escrita dos blogs de referência
-3. Use markdown formatado
-4. Inclua blocos de código quando relevante
-5. Sugira pontos onde imagens ou vídeos podem ser inseridos usando este formato:
-   - Para imagem: <!-- IMAGE: [descrição detalhada para gerar com IA] -->
-   - Para vídeo: <!-- VIDEO: [descrição detalhada para gerar com IA] -->
+3. **LINKS INLINE**: Insira links relevantes no corpo do texto usando [texto](url)
+4. **REFERÊNCIAS**: Adicione seção "## Referências" no final
+
+## INSTRUÇÕES DE MÍDIA
+Sugira imagens e vídeos nos pontos apropriados:
+- Posts curtos (< 1000 palavras): 1-2 imagens
+- Posts médios (1000-2000 palavras): 2-3 imagens + 0-1 vídeo
+- Posts longos (> 2000 palavras): 3-5 imagens + 1 vídeo
+
+Tipos de mídia:
+- **Diagramas**: Para explicar sistemas e fluxos
+- **Screenshots**: Para tutoriais
+- **Ilustrações tech-art**: Para conceitos abstratos
+- **Vídeos**: Para demonstrações passo-a-passo
+
+Placeholders:
+- Imagem: <!-- IMAGE: [descrição, estilo visual] -->
+- Vídeo: <!-- VIDEO: [descrição da cena, estilo] -->
 
 ## FORMATO DE RESPOSTA
-Responda em JSON válido com esta estrutura:
+JSON válido:
 {
   "posts": [
     {
       "language": "pt-br",
       "title": "Título do Post",
-      "markdown": "# Título\\n\\nConteúdo em markdown...",
+      "markdown": "# Título\\n\\nIntrodução...\\n\\n## Seção 1\\n\\n...\\n\\n## Key Takeaways\\n\\n- Ponto 1\\n- Ponto 2\\n\\n## Conclusão\\n\\n...\\n\\n## Referências\\n\\n- [Fonte](url)",
       "mediaPlaceholders": [
-        {
-          "type": "image",
-          "prompt": "Descrição detalhada para gerar a imagem"
-        }
+        { "type": "image", "prompt": "Descrição detalhada com estilo visual" }
       ]
     }
   ]
 }
 
-IMPORTANTE: Retorne APENAS o JSON, sem texto antes ou depois.`;
+IMPORTANTE: Retorne APENAS o JSON.`;
   }
 
   private parseResponse(text: string, targetLanguages: Language[]): GeneratedPost[] {

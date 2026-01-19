@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.angular/
+
+# Development files
+*.md
+*.log
+.env
+.env.*
+!.env.example
+.git/
+.gitignore
+.editorconfig
+
+# IDE
+.vscode/
+.idea/
+
+# Test files
+*.spec.ts
+karma.conf.js
+
+# Deploy folder itself (except Dockerfile and nginx.conf)
+deploy/cloudrun/README.md
+deploy/cloudrun/deploy.sh
+deploy/cloudrun/cloudbuild.yaml

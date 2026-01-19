@@ -2,11 +2,12 @@
 
 > 🚀 **Gere posts de blog profissionais com seu estilo pessoal de escrita, powered by Gemini 3 Flash.**
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-bloggerator.lmm.ai-00C7B7.svg?logo=google-cloud)](https://bloggerator.lmm.ai)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Angular](https://img.shields.io/badge/Angular-21-DD0031.svg?logo=angular)](https://angular.io/)
 [![Gemini](https://img.shields.io/badge/Gemini-3%20Flash-8B5CF6.svg?logo=google)](https://ai.google.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28.svg?logo=firebase)](https://firebase.google.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6.svg?logo=typescript)](https://www.typescriptlang.org/)
+[![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Deployed-4285F4.svg?logo=google-cloud)](https://cloud.google.com/run)
 
 ---
 
@@ -18,6 +19,7 @@
 - [Pré-requisitos](#-pré-requisitos)
 - [Instalação](#-instalação)
 - [Desenvolvimento](#-desenvolvimento)
+- [Deploy](#-deploy)
 - [Guia de Uso](#-guia-de-uso)
 - [Limites da API](#-limites-da-api)
 - [Stack Tecnológica](#-stack-tecnológica)
@@ -231,6 +233,24 @@ npm run test
 ```
 
 Acesse em **http://localhost:4200**
+
+---
+
+## 🚀 Deploy
+
+O Bloggerator está deployado no **Google Cloud Run** em [bloggerator.lmm.ai](https://bloggerator.lmm.ai).
+
+Para fazer seu próprio deploy:
+
+```bash
+# Configure o projeto GCP
+export GOOGLE_CLOUD_PROJECT="seu-project-id"
+
+# Execute o script de deploy
+./deploy/cloudrun/deploy.sh
+```
+
+📖 Documentação completa de deploy: [`deploy/cloudrun/README.md`](deploy/cloudrun/README.md)
 
 ---
 

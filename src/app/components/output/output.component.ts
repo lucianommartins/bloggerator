@@ -1,9 +1,11 @@
 import { Component, inject, input, signal, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SlicePipe, NgClass } from '@angular/common';
+import { GoogleGenAI } from '@google/genai';
 import { I18nService } from '../../i18n/i18n.service';
 import { GeneratedPost, MediaPlaceholder } from '../../models/blog.model';
 import { MediaService } from '../../services/media.service';
+import { ApiKeyService } from '../../services/api-key.service';
 
 // Track individual media generation state
 interface MediaState {
@@ -35,8 +37,28 @@ interface MediaState {
         @if (activeTab() === post.id) {
           <div class="output-content card">
             <div class="output-header">
-              <h2>{{ post.title }}</h2>
+              <div class="title-section">
+                <h2>{{ post.title }}</h2>
+                <div class="post-metrics">
+                  <span class="metric">📝 {{ getWordCount(post.markdown) }} palavras</span>
+                  <span class="metric">⏱️ {{ getReadingTime(post.markdown) }} min leitura</span>
+                </div>
+              </div>
               <div class="output-actions">
+                @if (isUserLanguage(post.language)) {
+                  <button class="btn btn-ghost" (click)="toggleEditMode(post.id)" [title]="isEditing(post.id) ? 'Visualizar' : 'Editar'">
+                    {{ isEditing(post.id) ? '👁️' : '✏️' }}
+                  </button>
+                  @if (hasEdits() && !isEditing(post.id)) {
+                    <button class="btn btn-primary btn-sm" (click)="syncToOtherLanguages()" [disabled]="isSyncing()">
+                      @if (isSyncing()) {
+                        <span class="spinner"></span> Sincronizando...
+                      } @else {
+                        🔄 Sync Idiomas
+                      }
+                    </button>
+                  }
+                }
                 <button class="btn btn-secondary" (click)="copyMarkdown(post)">
                   @if (copied()) {
                     {{ t().output.copied }}
@@ -47,21 +69,37 @@ interface MediaState {
               </div>
             </div>
 
-            <!-- Markdown Preview -->
-            <div class="markdown-preview">
-              <pre><code>{{ post.markdown }}</code></pre>
-            </div>
+            <!-- Markdown Edit/Preview -->
+            @if (isUserLanguage(post.language) && isEditing(post.id)) {
+              <textarea
+                class="textarea markdown-editor"
+                [(ngModel)]="post.markdown"
+                (ngModelChange)="onMarkdownChange()"
+                rows="15"
+              ></textarea>
+            } @else {
+              <div class="markdown-preview">
+                <pre><code>{{ post.markdown }}</code></pre>
+              </div>
+            }
 
             <!-- Media Placeholders -->
-            @if (post.mediaPlaceholders.length > 0) {
-              <div class="media-section">
+            <div class="media-section">
+              <div class="media-section-header">
                 <h3>Media</h3>
+                <div class="media-actions">
+                  <button class="btn btn-secondary btn-sm" (click)="addMediaPlaceholder(post, 'image')">+ 🖼️</button>
+                  <button class="btn btn-secondary btn-sm" (click)="addMediaPlaceholder(post, 'video')">+ 🎬</button>
+                </div>
+              </div>
+              @if (post.mediaPlaceholders.length > 0) {
                 <div class="media-grid">
                   @for (media of post.mediaPlaceholders; track media.id) {
                     <div class="media-card">
                       <div class="media-header">
                         <span class="media-type">{{ media.type === 'image' ? '🖼️' : '🎬' }}</span>
                         <span class="media-tool">{{ media.tool }}</span>
+                        <button class="btn-ghost btn-remove-media" (click)="removeMediaPlaceholder(post, media.id)" title="Remover">×</button>
                       </div>
                       
                       <textarea 
@@ -105,8 +143,10 @@ interface MediaState {
                     </div>
                   }
                 </div>
-              </div>
-            }
+              } @else {
+                <p class="empty-media-text">Adicione imagens ou vídeos usando os botões acima</p>
+              }
+            </div>
           </div>
         }
       }
@@ -154,14 +194,35 @@ interface MediaState {
     .output-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: var(--spacing-lg);
       padding-bottom: var(--spacing-md);
       border-bottom: 1px solid var(--border-color);
+      gap: var(--spacing-md);
+      flex-wrap: wrap;
+    }
+
+    .title-section {
+      flex: 1;
+      min-width: 200px;
 
       h2 {
         font-size: 1.25rem;
+        margin-bottom: var(--spacing-xs);
       }
+    }
+
+    .post-metrics {
+      display: flex;
+      gap: var(--spacing-md);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
     }
 
     .markdown-preview {
@@ -182,14 +243,41 @@ interface MediaState {
       }
     }
 
+    .markdown-editor {
+      width: 100%;
+      font-family: 'Fira Code', 'Monaco', monospace;
+      font-size: 0.875rem;
+      min-height: 350px;
+      resize: vertical;
+    }
+
     .media-section {
       margin-top: var(--spacing-xl);
       padding-top: var(--spacing-lg);
       border-top: 1px solid var(--border-color);
 
       h3 {
-        margin-bottom: var(--spacing-md);
+        margin: 0;
       }
+    }
+
+    .media-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .media-actions {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .empty-media-text {
+      color: var(--text-muted);
+      text-align: center;
+      padding: var(--spacing-lg);
+      font-style: italic;
     }
 
     .media-grid {
@@ -207,8 +295,8 @@ interface MediaState {
 
     .media-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: var(--spacing-sm);
       margin-bottom: var(--spacing-sm);
     }
 
@@ -222,6 +310,14 @@ interface MediaState {
       background: var(--bg-tertiary);
       padding: 2px 8px;
       border-radius: var(--radius-full);
+      flex: 1;
+    }
+
+    .btn-remove-media {
+      font-size: 1.25rem;
+      color: var(--error);
+      padding: 0 var(--spacing-xs);
+      margin-left: auto;
     }
 
     .media-prompt {
@@ -280,16 +376,104 @@ interface MediaState {
 export class OutputComponent {
   private i18n = inject(I18nService);
   private mediaService = inject(MediaService);
+  private apiKeyService = inject(ApiKeyService);
 
   posts = input.required<GeneratedPost[]>();
 
   t = this.i18n.t;
   activeTab = signal<string>('');
   copied = signal(false);
+  editingPosts = signal<Set<string>>(new Set());
+  hasEdits = signal(false);
+  isSyncing = signal(false);
+  private originalMarkdown = '';
 
   // Track state per media item for parallel generation using signal for reactivity
   mediaStates = signal<Record<string, MediaState>>({});
   private timers = new Map<string, ReturnType<typeof setInterval>>();
+
+  isUserLanguage(postLanguage: string): boolean {
+    return postLanguage === this.i18n.language();
+  }
+
+  isEditing(postId: string): boolean {
+    return this.editingPosts().has(postId);
+  }
+
+  toggleEditMode(postId: string): void {
+    const current = this.editingPosts();
+    const newSet = new Set(current);
+    if (newSet.has(postId)) {
+      newSet.delete(postId);
+    } else {
+      // Save original markdown when entering edit mode
+      const post = this.posts().find(p => p.id === postId);
+      if (post) {
+        this.originalMarkdown = post.markdown;
+      }
+      newSet.add(postId);
+    }
+    this.editingPosts.set(newSet);
+  }
+
+  onMarkdownChange(): void {
+    const userPost = this.posts().find(p => p.language === this.i18n.language());
+    if (userPost && userPost.markdown !== this.originalMarkdown) {
+      this.hasEdits.set(true);
+    }
+  }
+
+  async syncToOtherLanguages(): Promise<void> {
+    const userPost = this.posts().find(p => p.language === this.i18n.language());
+    if (!userPost) return;
+
+    const otherPosts = this.posts().filter(p => p.language !== this.i18n.language());
+    if (otherPosts.length === 0) return;
+
+    this.isSyncing.set(true);
+
+    try {
+      const client = new GoogleGenAI({ apiKey: this.apiKeyService.getApiKey() });
+
+      for (const targetPost of otherPosts) {
+        const prompt = `Você é um tradutor especializado em blogs técnicos.
+
+O usuário editou um post no idioma ${this.i18n.getLanguageForPrompt()}.
+Adapte as mudanças para ${targetPost.language === 'en' ? 'English' : targetPost.language === 'es' ? 'Spanish' : 'Brazilian Portuguese'}.
+
+POST ORIGINAL (antes das edições):
+${this.originalMarkdown}
+
+POST EDITADO:
+${userPost.markdown}
+
+POST ATUAL NO IDIOMA DESTINO:
+${targetPost.markdown}
+
+INSTRUÇÕES:
+1. Identifique as diferenças entre o post original e o editado
+2. Aplique as mesmas mudanças no post do idioma destino
+3. Mantenha o estilo e formatação markdown
+4. Retorne APENAS o markdown atualizado, sem explicações`;
+
+        const response = await client.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: prompt,
+        });
+
+        const newMarkdown = response.text || targetPost.markdown;
+        targetPost.markdown = newMarkdown;
+      }
+
+      this.hasEdits.set(false);
+      this.originalMarkdown = userPost.markdown;
+    } catch (error) {
+      console.error('Sync error:', error);
+    } finally {
+      this.isSyncing.set(false);
+    }
+  }
+
 
   ngOnChanges(): void {
     const postsValue = this.posts();
@@ -381,5 +565,40 @@ export class OutputComponent {
       }
       this.updateMediaState(media.id, { isGenerating: false });
     }
+  }
+
+  addMediaPlaceholder(post: GeneratedPost, type: 'image' | 'video'): void {
+    const newPlaceholder: MediaPlaceholder = {
+      id: `media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      prompt: '',
+      tool: type === 'video' ? 'veo3' as const : 'nano-banana' as const,
+      generated: false
+    };
+    post.mediaPlaceholders.push(newPlaceholder);
+  }
+
+  removeMediaPlaceholder(post: GeneratedPost, mediaId: string): void {
+    const index = post.mediaPlaceholders.findIndex(m => m.id === mediaId);
+    if (index !== -1) {
+      post.mediaPlaceholders.splice(index, 1);
+    }
+  }
+
+  getWordCount(markdown: string): number {
+    // Remove markdown syntax and count words
+    const text = markdown
+      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Replace links with text
+      .replace(/[#*`_~]/g, '') // Remove markdown formatting
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+    return text ? text.split(' ').length : 0;
+  }
+
+  getReadingTime(markdown: string): number {
+    const words = this.getWordCount(markdown);
+    const wordsPerMinute = 200; // Average reading speed
+    return Math.max(1, Math.round(words / wordsPerMinute));
   }
 }

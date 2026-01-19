@@ -25,7 +25,18 @@ export class MediaService {
    */
   async generateImage(prompt: string): Promise<GeneratedMedia> {
     const lang = this.i18n.getLanguageForPrompt();
-    const enhancedPrompt = `${prompt}. IMPORTANT: Any text in the image must be in ${lang}.`;
+
+    // Enhanced prompt with consistent visual style
+    const enhancedPrompt = `Create a professional tech-style image: ${prompt}
+
+STYLE REQUIREMENTS:
+- Modern, clean, minimalist design
+- Dark background with vibrant accent colors (blues, purples, cyans)
+- High contrast for readability
+- Professional and polished look
+- Any text must be in ${lang}
+- NO watermarks, NO stock photo feel
+- Suitable for a technical blog post`;
 
     const client = this.getClient();
 
@@ -67,7 +78,18 @@ export class MediaService {
     onProgress?: (status: string, seconds?: number) => void
   ): Promise<GeneratedMedia> {
     const lang = this.i18n.getLanguageForPrompt();
-    const enhancedPrompt = `${prompt}. IMPORTANT REQUIREMENTS: 1) Any on-screen text or graphics must be in ${lang}. 2) NO narration, NO dialogue, NO voices - only ambient sounds and music. 3) Keep visual style cinematic and professional.`;
+
+    // Enhanced prompt with cinematic requirements
+    const enhancedPrompt = `Create a professional video: ${prompt}
+
+VIDEO REQUIREMENTS:
+- Cinematic quality, smooth camera movements
+- Modern tech aesthetic with clean visuals
+- Any on-screen text or graphics must be in ${lang}
+- NO narration, NO dialogue, NO human voices
+- Ambient sounds and subtle background music only
+- Professional color grading (cool tones, high contrast)
+- Suitable for embedding in a technical blog post`;
 
     const client = this.getClient();
 
