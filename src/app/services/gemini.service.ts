@@ -135,6 +135,13 @@ Placeholders:
 - Imagem: <!-- IMAGE: [descrição, estilo visual] -->
 - Vídeo: <!-- VIDEO: [descrição da cena, estilo] -->
 
+## INSTRUÇÕES DE SEO
+Para cada post, gere metadata SEO otimizado:
+- **metaTitle**: 50-60 caracteres, keyword principal no início
+- **metaDescription**: 120-158 caracteres, resumo atrativo com CTA
+- **slug**: 2-6 palavras, lowercase, hífens, sem stop words (a, o, de, para)
+- **tags**: 3-5 tags relevantes para categorização
+
 ## FORMATO DE RESPOSTA
 JSON válido:
 {
@@ -143,6 +150,12 @@ JSON válido:
       "language": "pt-br",
       "title": "Título do Post",
       "markdown": "# Título\\n\\nIntrodução...\\n\\n## Seção 1\\n\\n...\\n\\n## Key Takeaways\\n\\n- Ponto 1\\n- Ponto 2\\n\\n## Conclusão\\n\\n...\\n\\n## Referências\\n\\n- [Fonte](url)",
+      "seo": {
+        "metaTitle": "Título Otimizado para SEO | Marca",
+        "metaDescription": "Descrição atrativa de 120-158 chars com keyword e CTA para aumentar CTR.",
+        "slug": "titulo-otimizado-seo",
+        "tags": ["tag1", "tag2", "tag3"]
+      },
       "mediaPlaceholders": [
         { "type": "image", "prompt": "Descrição detalhada com estilo visual" }
       ]
@@ -172,6 +185,12 @@ IMPORTANTE: Retorne APENAS o JSON.`;
         language: post.language || targetLanguages[index] || 'en',
         title: post.title || 'Untitled',
         markdown: post.markdown || '',
+        seo: post.seo ? {
+          metaTitle: post.seo.metaTitle || post.title || '',
+          metaDescription: post.seo.metaDescription || '',
+          slug: post.seo.slug || '',
+          tags: post.seo.tags || [],
+        } : undefined,
         mediaPlaceholders: (post.mediaPlaceholders || []).map((mp: any, mpIndex: number) => ({
           id: `media-${Date.now()}-${index}-${mpIndex}`,
           type: mp.type || 'image',

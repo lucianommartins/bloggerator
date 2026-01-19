@@ -83,6 +83,48 @@ interface MediaState {
               </div>
             }
 
+            <!-- SEO Section -->
+            @if (post.seo) {
+              <details class="seo-section" [open]="seoExpanded()">
+                <summary class="seo-header" (click)="toggleSeoSection()">
+                  <span>📊 SEO Metadata</span>
+                  <span class="seo-status">{{ getSeoScore(post.seo) }}</span>
+                </summary>
+                <div class="seo-content">
+                  <!-- SERP Preview -->
+                  <div class="serp-preview">
+                    <div class="serp-title">{{ post.seo.metaTitle | slice:0:60 }}{{ post.seo.metaTitle.length > 60 ? '...' : '' }}</div>
+                    <div class="serp-url">https://bloggerator.lmm.ai/blog/{{ post.seo.slug }}</div>
+                    <div class="serp-description">{{ post.seo.metaDescription | slice:0:160 }}{{ post.seo.metaDescription.length > 160 ? '...' : '' }}</div>
+                  </div>
+
+                  <!-- SEO Fields -->
+                  <div class="seo-fields">
+                    <div class="seo-field">
+                      <label>Meta Title <span class="char-count" [class.warning]="post.seo.metaTitle.length > 60" [class.ok]="post.seo.metaTitle.length <= 60 && post.seo.metaTitle.length >= 50">({{ post.seo.metaTitle.length }}/60)</span></label>
+                      <input type="text" [(ngModel)]="post.seo.metaTitle" class="input" />
+                    </div>
+                    <div class="seo-field">
+                      <label>Meta Description <span class="char-count" [class.warning]="post.seo.metaDescription.length > 158" [class.ok]="post.seo.metaDescription.length >= 120 && post.seo.metaDescription.length <= 158">({{ post.seo.metaDescription.length }}/158)</span></label>
+                      <textarea [(ngModel)]="post.seo.metaDescription" class="textarea" rows="2"></textarea>
+                    </div>
+                    <div class="seo-field">
+                      <label>Slug</label>
+                      <input type="text" [(ngModel)]="post.seo.slug" class="input" />
+                    </div>
+                    <div class="seo-field">
+                      <label>Tags</label>
+                      <div class="tags-container">
+                        @for (tag of post.seo.tags; track tag) {
+                          <span class="tag">{{ tag }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            }
+
             <!-- Media Placeholders -->
             <div class="media-section">
               <div class="media-section-header">
@@ -367,6 +409,104 @@ interface MediaState {
       font-size: 0.875rem;
     }
 
+    /* SEO Section Styles */
+    .seo-section {
+      margin-top: var(--spacing-lg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+    }
+
+    .seo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-md);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .seo-status {
+      font-size: 0.875rem;
+    }
+
+    .seo-content {
+      padding: var(--spacing-md);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .serp-preview {
+      background: white;
+      color: #202124;
+      padding: var(--spacing-md);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--spacing-md);
+      font-family: Arial, sans-serif;
+    }
+
+    .serp-title {
+      color: #1a0dab;
+      font-size: 1.125rem;
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+
+    .serp-title:hover {
+      text-decoration: underline;
+    }
+
+    .serp-url {
+      color: #006621;
+      font-size: 0.875rem;
+      margin-bottom: 4px;
+    }
+
+    .serp-description {
+      color: #545454;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .seo-fields {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .seo-field label {
+      display: block;
+      margin-bottom: var(--spacing-xs);
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+
+    .char-count {
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .char-count.ok {
+      color: var(--color-success);
+    }
+
+    .char-count.warning {
+      color: var(--color-warning);
+    }
+
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-xs);
+    }
+
+    .tag {
+      background: var(--accent-primary);
+      color: white;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -386,11 +526,32 @@ export class OutputComponent {
   editingPosts = signal<Set<string>>(new Set());
   hasEdits = signal(false);
   isSyncing = signal(false);
+  seoExpanded = signal(true);
   private originalMarkdown = '';
 
   // Track state per media item for parallel generation using signal for reactivity
   mediaStates = signal<Record<string, MediaState>>({});
   private timers = new Map<string, ReturnType<typeof setInterval>>();
+
+  toggleSeoSection(): void {
+    this.seoExpanded.update(v => !v);
+  }
+
+  getSeoScore(seo: { metaTitle: string; metaDescription: string; slug: string; tags: string[] }): string {
+    let score = 0;
+    // Title check (50-60 chars)
+    if (seo.metaTitle.length >= 50 && seo.metaTitle.length <= 60) score++;
+    // Description check (120-158 chars)
+    if (seo.metaDescription.length >= 120 && seo.metaDescription.length <= 158) score++;
+    // Slug check (has value, lowercase, no spaces)
+    if (seo.slug && seo.slug === seo.slug.toLowerCase() && !seo.slug.includes(' ')) score++;
+    // Tags check (3-5 tags)
+    if (seo.tags.length >= 3 && seo.tags.length <= 5) score++;
+
+    if (score === 4) return '✅ Ótimo';
+    if (score >= 2) return '⚠️ Bom';
+    return '❌ Melhorar';
+  }
 
   isUserLanguage(postLanguage: string): boolean {
     return postLanguage === this.i18n.language();

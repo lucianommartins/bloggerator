@@ -16,11 +16,19 @@ export interface MediaPlaceholder {
   url?: string;
 }
 
+export interface SEOMetadata {
+  metaTitle: string;      // 50-60 chars
+  metaDescription: string; // 120-158 chars
+  slug: string;            // lowercase-hyphenated
+  tags: string[];          // 3-5 tags
+}
+
 export interface GeneratedPost {
   id: string;
   language: Language;
   title: string;
   markdown: string;
+  seo?: SEOMetadata;
   mediaPlaceholders: MediaPlaceholder[];
   generatedAt: Date;
 }
