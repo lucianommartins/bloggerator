@@ -2,7 +2,6 @@
 
 > 🚀 **Gere posts de blog profissionais com seu estilo pessoal de escrita, powered by Gemini 3 Flash.**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-bloggerator.lmm.ai-00C7B7.svg?logo=google-cloud)](https://bloggerator.lmm.ai)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Angular](https://img.shields.io/badge/Angular-21-DD0031.svg?logo=angular)](https://angular.io/)
 [![Gemini](https://img.shields.io/badge/Gemini-3%20Flash-8B5CF6.svg?logo=google)](https://ai.google.dev/)

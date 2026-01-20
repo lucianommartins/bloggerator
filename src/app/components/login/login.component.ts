@@ -30,6 +30,14 @@ import { ThemeService } from '../../services/theme.service';
           <span>{{ t().login.googleButton }}</span>
         </button>
 
+        <!-- Access Denied Message -->
+        @if (accessDenied()) {
+          <div class="access-denied">
+            <span>🚫</span>
+            <p>Acesso restrito. Seu email não está autorizado.</p>
+          </div>
+        }
+
         <!-- Theme & Language Toggle -->
         <div class="login-footer">
           <button class="btn-ghost" (click)="toggleTheme()">
@@ -149,6 +157,25 @@ import { ThemeService } from '../../services/theme.service';
         border-color: var(--accent-primary);
       }
     }
+
+    .access-denied {
+      margin-top: var(--spacing-md);
+      padding: var(--spacing-md);
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius-md);
+      text-align: center;
+      color: #ef4444;
+
+      span {
+        font-size: 1.5rem;
+      }
+
+      p {
+        margin-top: var(--spacing-xs);
+        font-size: 0.875rem;
+      }
+    }
   `]
 })
 export class LoginComponent {
@@ -159,6 +186,7 @@ export class LoginComponent {
 
   t = this.i18n.t;
   isLoading = this.auth.isLoading;
+  accessDenied = this.auth.accessDenied;
   isDark = this.themeService.isDark;
   currentLang = this.i18n.language;
   languages = this.i18n.availableLanguages;
